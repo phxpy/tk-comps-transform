@@ -1,0 +1,100 @@
+*, ::after, ::before {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "JetBrains Mono", monospace;
+}
+
+html {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    width: 80vw;
+    height: 80vh;
+    margin: 0 auto;
+}
+
+textarea {
+    width: 100%;
+    height: 100%;
+    padding: 5px;
+    font-size: 16px;
+    resize: none;
+}
+
+.source {
+    grid-column: 1;
+}
+
+.reset-btn {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 50px;
+    height: 50px;
+    font-size: 0;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.reset-btn:hover {
+    animation: round 1s infinite cubic-bezier(.56,-0.54,.48,1.49);
+}
+
+@keyframes round {
+    from {
+        transform: rotate(0);
+    }
+    to {
+        transform: rotate(180deg);
+    }
+}
+
+.browserslist {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    line-height: 1;
+}
+
+.result-wrap {
+    position: relative;
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.result {
+    cursor: pointer;
+}
+
+.copied-msg {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    padding: 5px;
+    font-size: 20px;
+    border-radius: 5px;
+    background-color: #adf2ad;
+    animation: fade-out 2s ease-out forwards;
+}
+
+@keyframes fade-out {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}

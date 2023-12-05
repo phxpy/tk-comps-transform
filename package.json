@@ -1,0 +1,25 @@
+{
+  "name": "tk-lp-components-transformer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "browserify js/source.js -o js/bundle.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^17.0.0"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.16",
+    "csso": "^5.0.5",
+    "is-html": "^3.0.0",
+    "jsdom": "^23.0.1",
+    "postcss": "^8.4.32",
+    "posthtml": "^0.16.6",
+    "posthtml-minifier": "^0.1.0",
+    "uglify-js": "^3.17.4"
+  }
+}
