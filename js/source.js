@@ -4,6 +4,7 @@ const minifier = require('posthtml-minifier');
 const postcss = require("postcss");
 const autoprefixer = require("autoprefixer");
 const csso = require('csso');
+const scopify = require('postcss-scopify');
 
 const uglifyJS = require("./uglify");
 
@@ -12,8 +13,10 @@ const resultTxa = document.querySelector(".result");
 const resetBtn = document.querySelector(".reset-btn");
 
 const browserslist = ["defaults", "not dead", "last 10 versions"]
+const regex = /<[a-zA-Z]+(>|.*?[^?]>)/gi
+let uniqueDataAttr = generateUniqueDataAttr();
 
-span.textContent = `CSS: ${browserslist.join(", ")}`;
+document.querySelector(".browserslist").textContent = `CSS: ${browserslist.join(", ")}`;
 
 let comp = {}
 
@@ -23,16 +26,17 @@ resetBtn.addEventListener("click", () => {
     })
     resultTxa.value = "";
     comp = {}
+    uniqueDataAttr = generateUniqueDataAttr();
 })
 
 sources.forEach(source => {
     source.addEventListener("input", e => {
         parseCode(source)
     })
-    
+
     source.addEventListener("paste", e => {
         e.preventDefault();
-        
+
         const pastedText = (e.clipboardData || window.clipboardData).getData('text');
         source.value = pastedText;
 
@@ -42,6 +46,9 @@ sources.forEach(source => {
 
 function parseCode(source) {
     if (source.id === "txa-html") {
+
+        // HTML minifier
+
         posthtml()
             .use(minifier({
                 collapseWhitespace: true,
@@ -51,23 +58,39 @@ function parseCode(source) {
             }))
             .process(source.value)
             .then(function (result) {
-                comp["html"] = result.html
+                const scopedHtml = result.html.replaceAll(regex, match => {
+                    if (match.endsWith("/>")) {
+                        return `${match.slice(0, -2)} data-${uniqueDataAttr}/>`;
+                    } else {
+                        return `${match.slice(0, -1)} data-${uniqueDataAttr}>`;
+                    }
+                });
+                comp["html"] = scopedHtml
                 resultTxa.value = JSON.stringify(comp, null, 4);
             })
             .catch(function (error) {
                 console.error("Bullshit! Not valid HTML! 💩");
             });
+
     } else if (source.id === "txa-css") {
-        postcss(
-            [autoprefixer({ overrideBrowserslist: browserslist })]
-        ).process(source.value, { from: undefined }).then(result => {
-            comp["css"] = csso.minify(result.css).css
+
+        // CSS minifier and autoprefixer
+
+        postcss([
+            autoprefixer({ overrideBrowserslist: browserslist }),
+            scopify('#scope')
+        ]).process(source.value, { from: undefined }).then(result => {
+            comp["css"] = csso.minify(result.css, { restructure: false }).css
             resultTxa.value = JSON.stringify(comp, null, 4);
         })
         .catch(error => {
             console.error("Bullshit! Not valid CSS! 💩");
         })
+
     } else if (source.id === "txa-js") {
+
+        // JS minifier
+
         const result = uglifyJS.minify(source.value);
         if (!result.error) {
             comp["js"] = result.code
@@ -91,3 +114,15 @@ resultTxa.addEventListener("click", () => {
         resultTxa.parentElement.removeChild(span);
     }, 2000)
 })
+
+function generateUniqueDataAttr() {
+    const characters = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+    let uniqueDataAttr = "tk-";
+
+    for (let i = 0; i < 6; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        uniqueDataAttr += characters.charAt(randomIndex);
+    }
+
+    return uniqueDataAttr;
+}
