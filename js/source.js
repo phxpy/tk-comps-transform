@@ -61,12 +61,6 @@ function parseCode(source) {
                 comp["html"] = result.html
                 resultTxa.value = JSON.stringify(comp, null, 4);
                 parseCode(sourceCss)
-
-                if (scopeId) {
-                    document.getElementById("txa-css").disabled = false
-                } else {
-                    document.getElementById("txa-css").disabled = true
-                }
             })
             .catch(function (error) {
                 if (comp.hasOwnProperty("html")) {
@@ -74,7 +68,6 @@ function parseCode(source) {
                 }
                 resultTxa.value = JSON.stringify(comp, null, 4);
                 scopeId = null
-                document.getElementById("txa-css").disabled = true
                 console.error("Bullshit! Not valid HTML! 💩");
             });
 
