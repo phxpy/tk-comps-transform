@@ -10,12 +10,12 @@ const scopify = require('postcss-scopify');
 const uglifyJS = require("./uglify");
 
 const sources = Array.from(document.querySelectorAll(".source"));
+const sourceCss = document.getElementById("txa-css");
 const resultTxa = document.querySelector(".result");
 const resetBtn = document.querySelector(".reset-btn");
 
 const browserslist = ["defaults", "not dead", "last 10 versions"]
-const regex = /<[a-zA-Z]+(>|.*?[^?]>)/gi
-let uniqueDataAttr = generateUniqueDataAttr();
+let scopeId = null
 
 document.querySelector(".browserslist").textContent = `CSS: ${browserslist.join(", ")}`;
 
@@ -27,7 +27,6 @@ resetBtn.addEventListener("click", () => {
     })
     resultTxa.value = "";
     comp = {}
-    uniqueDataAttr = generateUniqueDataAttr();
 })
 
 sources.forEach(source => {
@@ -59,27 +58,34 @@ function parseCode(source) {
             }))
             .process(source.value)
             .then(function (result) {
-                const scopedHtml = result.html.replaceAll(regex, match => {
-                    if (match.endsWith("/>")) {
-                        return `${match.slice(0, -2)} data-${uniqueDataAttr}/>`;
-                    } else {
-                        return `${match.slice(0, -1)} data-${uniqueDataAttr}>`;
-                    }
-                });
-                comp["html"] = scopedHtml
+                scopeId = getCompId(result.html);
+                comp["html"] = result.html
                 resultTxa.value = JSON.stringify(comp, null, 4);
+                parseCode(sourceCss)
+
+                if (scopeId) {
+                    document.getElementById("txa-css").disabled = false
+                } else {
+                    document.getElementById("txa-css").disabled = true
+                }
             })
             .catch(function (error) {
+                if (comp.hasOwnProperty("html")) {
+                    comp["html"] = ""
+                }
+                resultTxa.value = JSON.stringify(comp, null, 4);
+                scopeId = null
+                document.getElementById("txa-css").disabled = true
                 console.error("Bullshit! Not valid HTML! 💩");
             });
 
-    } else if (source.id === "txa-css") {
+    } else if (source.id === "txa-css" && scopeId) {
 
         // CSS minifier and autoprefixer
 
         postcss([
             autoprefixer({ overrideBrowserslist: browserslist }),
-            scopify('#scope')
+            scopify(`#${scopeId}`)
         ]).process(source.value, { from: undefined }).then(result => {
             comp["css"] = csso.minify(result.css, { restructure: false }).css
             resultTxa.value = JSON.stringify(comp, null, 4);
@@ -116,16 +122,15 @@ resultTxa.addEventListener("click", () => {
     }, 2000)
 })
 
-function generateUniqueDataAttr() {
-    const characters = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
-    let uniqueDataAttr = "tk-";
+function getCompId(htmlString) {
+    const div = document.createElement('div');
+    div.innerHTML = htmlString.trim();
 
-    for (let i = 0; i < 6; i++) {
-        const randomIndex = Math.floor(Math.random() * characters.length);
-        uniqueDataAttr += characters.charAt(randomIndex);
+    if (div.firstChild.id) {
+        return div.firstChild.id;
+    } else {
+        console.error("Bullshit! WHERE IS TOP LEVEL ID?! 💩");
     }
-
-    return uniqueDataAttr;
 }
 
 },{"./uglify":2,"autoprefixer":8,"csso":355,"postcss":562,"postcss-scopify":486,"posthtml":583,"posthtml-minifier":574}],2:[function(require,module,exports){
