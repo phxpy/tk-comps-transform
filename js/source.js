@@ -1,20 +1,21 @@
+const { nanoid } = require("nanoid");
+
 const posthtml = require('posthtml');
 const minifier = require('posthtml-minifier');
 
 const postcss = require("postcss");
 const autoprefixer = require("autoprefixer");
 const csso = require('csso');
-const scopify = require('postcss-scopify');
+const prefixer = require('postcss-prefix-selector')
 
-const uglifyJS = require("./uglify");
+const uglifyJS = require("./uglify.js");
 
 const sources = Array.from(document.querySelectorAll(".source"));
-const sourceCss = document.getElementById("txa-css");
 const resultTxa = document.querySelector(".result");
 const resetBtn = document.querySelector(".reset-btn");
 
 const browserslist = ["defaults", "not dead", "last 10 versions"]
-let scopeId = null
+let scopeAttr = nanoid(5)
 
 document.querySelector(".browserslist").textContent = `CSS: ${browserslist.join(", ")}`;
 
@@ -26,6 +27,7 @@ resetBtn.addEventListener("click", () => {
     })
     resultTxa.value = "";
     comp = {}
+    scopeAttr = nanoid(5)
 })
 
 sources.forEach(source => {
@@ -57,27 +59,40 @@ function parseCode(source) {
             }))
             .process(source.value)
             .then(function (result) {
-                scopeId = getCompId(result.html);
-                comp["html"] = result.html
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(result.html, "text/html");
+                const elems = doc.querySelectorAll("*:not(html, head, body)");
+                elems.forEach(elem => {
+                    elem.setAttribute(`data-${scopeAttr}`, "")
+                })
+                const htmlStr = elems[0].outerHTML
+
+                comp["html"] = htmlStr
                 resultTxa.value = JSON.stringify(comp, null, 4);
-                parseCode(sourceCss)
             })
             .catch(function (error) {
                 if (comp.hasOwnProperty("html")) {
                     comp["html"] = ""
                 }
                 resultTxa.value = JSON.stringify(comp, null, 4);
-                scopeId = null
                 console.error("Bullshit! Not valid HTML! 💩");
             });
 
-    } else if (source.id === "txa-css" && scopeId) {
+    } else if (source.id === "txa-css") {
 
         // CSS minifier and autoprefixer
 
         postcss([
-            autoprefixer({ overrideBrowserslist: browserslist }),
-            scopify(`#${scopeId}`)
+            autoprefixer({
+                overrideBrowserslist: browserslist
+            }),
+            prefixer({
+                prefix: scopeAttr,
+
+                transform: function (prefix, selector, prefixedSelector, filePath, rule) {
+                    return `${selector}[data-${prefix}]`;
+                }
+            })
         ]).process(source.value, { from: undefined }).then(result => {
             comp["css"] = csso.minify(result.css, { restructure: false }).css
             resultTxa.value = JSON.stringify(comp, null, 4);
@@ -113,14 +128,3 @@ resultTxa.addEventListener("click", () => {
         resultTxa.parentElement.removeChild(span);
     }, 2000)
 })
-
-function getCompId(htmlString) {
-    const div = document.createElement('div');
-    div.innerHTML = htmlString.trim();
-
-    if (div.firstChild.id) {
-        return div.firstChild.id;
-    } else {
-        console.error("Bullshit! WHERE IS TOP LEVEL ID?! 💩");
-    }
-}
